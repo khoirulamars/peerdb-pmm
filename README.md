@@ -67,11 +67,17 @@ docker exec -it catalog psql -U postgres -d source -c "GRANT CONNECT ON DATABASE
 docker exec -it catalog psql -U postgres -d target -c "GRANT CONNECT ON DATABASE target TO pmm;"
 
 # === TAHAP 4: PMM MONITORING SETUP ===
-# 6A. Configure PMM client
-docker exec -it pmm-client pmm-admin config --server-url=http://admin:admin@pmm-server:80 --server-insecure-tls
+# 6A. Setup PMM agent 
+docker exec -it pmm-client pmm-agent setup --config-file=/usr/local/percona/pmm2/config/pmm-agent.yaml --server-address=pmm-server:443 --server-username=admin --server-password=admin --server-insecure-tls
 
-# 6B. Register PostgreSQL services ke PMM
-docker exec -it pmm-client pmm-admin add postgresql --query-source=pgstatements catalog-postgres catalog:5432 --username=pmm --password=pmm_strong_password --disable-ssl
+# 6B. Start PMM agent
+docker exec -d pmm-client pmm-agent --config-file=/usr/local/percona/pmm2/config/pmm-agent.yaml
+
+# 6C. Verify PMM client connection
+docker exec -it pmm-client pmm-admin status
+
+# 6D. Register PostgreSQL services ke PMM
+docker exec -it pmm-client pmm-admin add postgresql catalog-postgres --host=catalog --port=5432 --username=pmm --password=pmm_strong_password --query-source=pgstatements --tls-skip-verify
 
 # === TAHAP 5: CDC SETUP ===
 # 7. Buat CDC di UI Peerdb (setup source → target replication)

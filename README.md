@@ -73,14 +73,7 @@ docker exec -it catalog psql -U postgres -d target -c "GRANT CONNECT ON DATABASE
 docker exec -it pmm-client pmm-admin status
 
 # 6C. Register PostgreSQL services ke PMM
-# Untuk database postgres
 docker exec -it pmm-client pmm-admin add postgresql catalog-postgres --host=catalog --port=5432 --username=pmm --password=pmm_strong_password --query-source=pgstatements --tls-skip-verify
-
-# Untuk database source (optional)
-docker exec -it pmm-client pmm-admin add postgresql source-database --host=catalog --port=5432 --username=pmm --password=pmm_strong_password --database=source --query-source=pgstatements --tls-skip-verify
-
-# Untuk database target (optional)
-docker exec -it pmm-client pmm-admin add postgresql target-database --host=catalog --port=5432 --username=pmm --password=pmm_strong_password --database=target --query-source=pgstatements --tls-skip-verify
 
 
 # === TAHAP 5: CDC SETUP ===
@@ -132,43 +125,6 @@ curl -s http://localhost:8080/ping
 
 ---
 
-## 📋 **FORM DATA UNTUK PMM UI**
-
-### **Database Catalog (postgres)**
-```
-Service name: catalog-postgres
-Hostname: catalog
-Port: 5432
-Username: pmm
-Password: pmm_strong_password
-Database: postgres
-Max query length: 2048
-TLS: ❌ DISABLED
-```
-
-### **Database Source**
-```
-Service name: source-postgres
-Hostname: catalog
-Port: 5432
-Username: pmm
-Password: pmm_strong_password
-Database: source
-Max query length: 2048
-TLS: ❌ DISABLED
-```
-
-### **Database Target**
-```
-Service name: target-postgres
-Hostname: catalog
-Port: 5432
-Username: pmm
-Password: pmm_strong_password
-Database: target
-Max query length: 2048
-TLS: ❌ DISABLED
-```
 
 ## 🔄 **Data Flow & Component Interactions**
 

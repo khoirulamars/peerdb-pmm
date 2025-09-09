@@ -58,6 +58,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./volumes/postgresql.conf:/etc/postgresql.conf
+      - ./volumes/pg_hba.conf:/etc/pg_hba_custom.conf
       - ./volumes/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "pg_isready", "-d", "postgres", "-U", "postgres"]
@@ -263,11 +264,16 @@ services:
     entrypoint: /bin/bash
     command: >
       -c "
-        echo 'PMM Client ready for manual configuration...' &&
-        echo 'Run manual commands:' &&
-        echo '1. docker exec -it pmm-client pmm-admin config --server-url=http://admin:admin@pmm-server:80 --server-insecure-tls' &&
-        echo '2. docker exec -it pmm-client pmm-admin add postgresql --query-source=pgstatements catalog-postgres catalog:5432 --username=pmm --password=pmm_strong_password --disable-ssl' &&
-        tail -f /dev/null
+        echo 'Starting PMM Client with auto-configuration...' &&
+        echo 'Waiting for PMM Server to be ready...' &&
+        until curl -f http://pmm-server:80/ping > /dev/null 2>&1; do
+          echo 'Waiting for PMM Server...'
+          sleep 5
+        done &&
+        echo 'PMM Server is ready. Setting up PMM agent...' &&
+        pmm-agent setup --config-file=/usr/local/percona/pmm2/config/pmm-agent.yaml --server-address=pmm-server:443 --server-username=admin --server-password=admin --server-insecure-tls &&
+        echo 'Starting PMM agent...' &&
+        pmm-agent --config-file=/usr/local/percona/pmm2/config/pmm-agent.yaml
       "
 
 volumes:

@@ -1,6 +1,6 @@
 # 🔧 Setup CDC PeerDB dan PMM Monitoring 
 
-## 🏗️ **Docker Compose Architecture**
+## 🏗️ **Docker Compose
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -16,7 +16,7 @@
   📊 PMM Monitoring Stack                                   
   ├── pgexporter → Scrape PostgreSQL metrics                 
   ├── pmm-server → Prometheus + Grafana                      
-  └── pmm-client → Service registration                    
+  └── pmm-client → Registers services to PMM server                  
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -29,10 +29,10 @@
 
 ```bash
 # === TAHAP 1: INFRASTRUCTURE SETUP ===
-# 1. Reset semua data dan PMM account (hapus volume persistent)
+# 1. Reset semua data dan PMM account
 docker compose down -v
 
-# 2. Start fresh (container startup otomatis sesuai dependency)
+# 2. Start 
 docker compose up -d
 
 # 3. Tunggu semua container ready
@@ -67,17 +67,21 @@ docker exec -it catalog psql -U postgres -d source -c "GRANT CONNECT ON DATABASE
 docker exec -it catalog psql -U postgres -d target -c "GRANT CONNECT ON DATABASE target TO pmm;"
 
 # === TAHAP 4: PMM MONITORING SETUP ===
-# 6A. Setup PMM agent 
-docker exec -it pmm-client pmm-agent setup --config-file=/usr/local/percona/pmm2/config/pmm-agent.yaml --server-address=pmm-server:443 --server-username=admin --server-password=admin --server-insecure-tls
+# 6A. PMM agent sudah auto-start di container startup
 
-# 6B. Start PMM agent
-docker exec -d pmm-client pmm-agent --config-file=/usr/local/percona/pmm2/config/pmm-agent.yaml
-
-# 6C. Verify PMM client connection
+# 6B. Verify PMM client connection
 docker exec -it pmm-client pmm-admin status
 
-# 6D. Register PostgreSQL services ke PMM
+# 6C. Register PostgreSQL services ke PMM
+# Untuk database postgres
 docker exec -it pmm-client pmm-admin add postgresql catalog-postgres --host=catalog --port=5432 --username=pmm --password=pmm_strong_password --query-source=pgstatements --tls-skip-verify
+
+# Untuk database source (optional)
+docker exec -it pmm-client pmm-admin add postgresql source-database --host=catalog --port=5432 --username=pmm --password=pmm_strong_password --database=source --query-source=pgstatements --tls-skip-verify
+
+# Untuk database target (optional)
+docker exec -it pmm-client pmm-admin add postgresql target-database --host=catalog --port=5432 --username=pmm --password=pmm_strong_password --database=target --query-source=pgstatements --tls-skip-verify
+
 
 # === TAHAP 5: CDC SETUP ===
 # 7. Buat CDC di UI Peerdb (setup source → target replication)
@@ -171,14 +175,14 @@ TLS: ❌ DISABLED
 ```
 🔁 CDC WORKFLOW (PeerDB)
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   SOURCE    │───▶│   CATALOG   │───▶│  TEMPORAL   │───▶│   TARGET    │
+│   SOURCE    │───▶│   CATALOG   │───▶│  TEMPORAL   │───▶│   TARGET   │
 │ (PostgreSQL)│    │(metadata DB)│    │ (workflow)  │    │ (PostgreSQL)│
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
        │                   │                   │                   │
        ▼                   ▼                   ▼                   ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     📊 PMM MONITORING                              │
-│  pgexporter ───▶ pmm-server (Prometheus) ───▶ Grafana Dashboard   │
+│                     📊 PMM MONITORING                               │
+│  pgexporter ───▶ pmm-server (Prometheus) ───▶ Grafana Dashboard    │
 └─────────────────────────────────────────────────────────────────────┘
 
 🎯 COMPONENT ROLES:
@@ -188,5 +192,7 @@ TLS: ❌ DISABLED
 • FLOW-API/WORKERS: Process actual data changes and replication
 • PGEXPORTER: Scrapes PostgreSQL metrics (connections, queries, etc.)
 • PMM-SERVER: Collects metrics and provides Grafana visualization
-• PMM-CLIENT: Auto-registers services to PMM server
+• PMM-CLIENT: Registers services to PMM server
 ```
+
+

@@ -126,7 +126,7 @@ curl -s http://localhost:8080/ping
 ---
 
 
-## 🔄 **Data Flow & Component Interactions**
+## 🔄 **Data Flow and Component Interactions**
 
 ```
 🔁 CDC WORKFLOW (PeerDB)
